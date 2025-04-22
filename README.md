@@ -2,10 +2,16 @@
 Este projeto faz parte do trabalho prático da disciplina de **Banco de Dados** do curso de **Ciência da Computação** na **Universidade Federal de São João del-Rei (UFSJ)**. O objetivo é desenvolver um sistema para gerenciar e visualizar informações sobre o **Campeonato Brasileiro de Futebol 2023**, utilizando **MongoDB** como banco de dados e **Streamlit** para a interface web.
 
 ## 🎯 Funcionalidades  
-- Cadastro de jogadores e equipes  
-- Registro de partidas e estatísticas individuais  
-- Consulta de informações sobre o campeonato  
-- Interface amigável para administração e consulta  
+O sistema possui dois tipos de usuários com diferentes níveis de acesso:
+-	Administrador: tem permissão para realizar operações de criação (Create), edição (Update) e remoção (Delete) de dados.
+-	Usuário comum: possui acesso somente para visualização (Read) dos dados.
+
+As principais entidades gerenciadas no sistema são:
+-	Jogadores
+-	Equipes
+-	Jogos
+-	Estatísticas
+- Usuários
 
 ## 🏗️ Tecnologias Utilizadas  
 - **Python** 🐍  
@@ -23,10 +29,11 @@ CBFManager/
 │   │── connection.py       # Conexão com MongoDB
 │   │── models.py           # Modelos das entidades
 │── modules/
-│   │── jogadores.py        # Cadastro e consulta de jogadores
-│   │── equipes.py          # Cadastro e consulta de equipes
-│   │── jogos.py            # Cadastro e consulta de jogos
-│   │── estatisticas.py     # Registro e consulta de estatísticas
+│   │── jogadores.py        # Gerenciamento de jogadores
+│   │── equipes.py          # Gerenciamento de equipes
+│   │── jogos.py            # Gerenciamento de jogos
+│   │── estatisticas.py     # Gerenciamento de estatísticas
+│   │── usuarios.py         # Gerenciamento de usuários
 ```
 
 ## 🚀 Como Executar  
