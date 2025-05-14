@@ -15,58 +15,71 @@ def cadastrar_jogador():
     with st.spinner("Carregando equipes..."):
         equipes = list(collections["equipes"].find())
 
-    if not equipes:
-        st.error("Não há equipes cadastradas. Cadastre uma equipe primeiro.")
-        return
-
-    lista_equipes = [f"{equipe['nome']} (ID: {equipe['_id']})" for equipe in equipes]
+    lista_equipes = ["Nenhuma"] + [equipe["nome"] for equipe in equipes]
     equipe_selecionada = st.selectbox("Equipe:", lista_equipes)
-
-    equipe_id = equipe_selecionada.split(" (ID: ")[1].strip(")")
-    equipe_id = ObjectId(equipe_id)
 
     numero_jogador = st.number_input("Número do Jogador:", min_value=1, step=1)
 
-    if st.button("Cadastrar"):
+    if st.button("Cadastrar Jogador"):
+        equipe_nome = None if equipe_selecionada == "Nenhuma" else equipe_selecionada
+
         with st.spinner("Verificando jogador existente..."):
-            jogador_existente = collections["jogadores"].find_one(
-                {"equipe_id": equipe_id, "numero": numero_jogador}
-            )
+            filtro = {
+                "nome": nome_jogador,
+                "numero": numero_jogador,
+                "equipe_nome": equipe_nome,
+            }
+            jogador_existente = collections["jogadores"].find_one(filtro)
+
         if jogador_existente:
-            st.error(
-                f"Já existe um jogador com o número {numero_jogador} na equipe selecionada."
-            )
+            msg = f"Já existe um jogador com o número {numero_jogador}"
+            msg += f" na equipe '{equipe_nome}'." if equipe_nome else " sem equipe."
+            st.error(msg)
         else:
             with st.spinner("Cadastrando jogador..."):
-                collections["jogadores"].insert_one(
-                    {
-                        "nome": nome_jogador,
-                        "equipe_id": equipe_id,
-                        "numero": numero_jogador,
-                    }
-                )
-            st.success(f"Jogador {nome_jogador} cadastrado com sucesso na equipe!")
+                doc = {
+                    "nome": nome_jogador,
+                    "numero": numero_jogador,
+                    "equipe_nome": equipe_nome,
+                }
+                collections["jogadores"].insert_one(doc)
+
+            st.success(f"Jogador '{nome_jogador}' cadastrado com sucesso!")
 
 
 def deletar_jogador():
     st.header("Deletar Jogador")
 
     with st.spinner("Carregando jogadores..."):
-        jogadores = list(db["jogadores"].find())
+        jogadores = list(collections["jogadores"].find())
+
+    if not jogadores:
+        st.info("Nenhum jogador cadastrado ainda.")
+        return
 
     lista_jogadores = [
-        f"{jogador['nome']} (ID: {jogador['_id']})" for jogador in jogadores
+        f"{j['nome']} | Nº {j['numero']} | {j.get('equipe_nome', 'Nenhuma')} (ID: {j['_id']})"
+        for j in jogadores
     ]
 
-    jogador_selecionado = st.selectbox("Escolha um jogador:", lista_jogadores)
+    jogador_selecionado = st.selectbox(
+        "Escolha um jogador para deletar:", lista_jogadores
+    )
 
     if st.button("Deletar"):
-        jogador_id = jogador_selecionado.split(" (ID: ")[1].strip(")")
+        jogador_id_str = jogador_selecionado.split("(ID: ")[1].strip(")")
+        jogador_id = ObjectId(jogador_id_str)
+
         try:
-            with st.spinner("Deletando jogador..."):
-                collections["jogadores"].delete_one({"_id": ObjectId(jogador_id)})
-            st.success("Jogador deletado com sucesso!")
+            with st.spinner("Deletando jogador e estatísticas relacionadas..."):
+                # CASCADE ESTATISTICA
+                collections["estatisticas"].delete_many({"jogador_id": jogador_id})
+
+                collections["jogadores"].delete_one({"_id": jogador_id})
+
+            st.success("Jogador e estatísticas relacionadas deletados com sucesso!")
             st.rerun()
+
         except Exception as e:
             st.error(f"Erro ao deletar: {e}")
 
@@ -79,18 +92,20 @@ def visualizar_jogador():
 
     if jogadores:
         dados_tabela = []
+        for j in jogadores:
+            nome_equipe = j.get("nome_equipe")
+            if not nome_equipe:
+                nome_equipe = "Nenhuma"
 
-        for jogador in jogadores:
-            with st.spinner(f"Carregando equipe do jogador {jogador['nome']}..."):
-                equipe = collections["equipes"].find_one({"_id": jogador["equipe_id"]})
             dados_tabela.append(
                 {
-                    "Nome": jogador["nome"],
-                    "Número": jogador["numero"],
-                    "Equipe": equipe["nome"] if equipe else "Desconhecida",
+                    "Nome": j["nome"],
+                    "Número": j["numero"],
+                    "Equipe": nome_equipe,
+                    "ID": str(j["_id"]),
                 }
             )
 
-        st.dataframe(dados_tabela)
+        st.table(dados_tabela)
     else:
         st.info("Nenhum jogador cadastrado ainda.")

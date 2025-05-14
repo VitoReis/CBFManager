@@ -12,7 +12,7 @@ def cadastrar_equipe():
     st.header("Cadastrar Equipe")
     nome_equipe = st.text_input("Nome da Equipe:")
 
-    if st.button("Cadastrar"):
+    if st.button("Cadastrar Equipe"):
         with st.spinner("Verificando existência da equipe..."):
             equipe_existente = collections["equipes"].find_one({"nome": nome_equipe})
         if equipe_existente:
@@ -20,15 +20,28 @@ def cadastrar_equipe():
         else:
             with st.spinner("Cadastrando equipe..."):
                 collections["equipes"].insert_one({"nome": nome_equipe})
-            st.success(f"Equipe {nome_equipe} cadastrada!")
+            st.success(f"Equipe '{nome_equipe}' cadastrada!")
 
 
-def desassociar_jogadores_da_equipe(equipe_id):
-    """Define o campo equipe_id como None para todos os jogadores da equipe deletada."""
+# CASCADE JOGADORES
+def desassociar_jogadores_da_equipe(nome_equipe):
     with st.spinner("Desassociando jogadores da equipe..."):
         collections["jogadores"].update_many(
-            {"equipe_id": ObjectId(equipe_id)}, {"$set": {"equipe_id": None}}
+            {"nome_equipe": nome_equipe}, {"$set": {"nome_equipe": None}}
         )
+
+
+# CASCADE JOGOS E ESTATISTICAS
+def deletar_jogos_da_equipe(nome_equipe):
+    with st.spinner("Deletando jogos e estatísticas relacionadas à equipe..."):
+        jogos_associados = collections["jogos"].find(
+            {"$or": [{"nome_equipe1": nome_equipe}, {"nome_equipe2": nome_equipe}]}
+        )
+
+        for jogo in jogos_associados:
+            jogo_id = jogo["_id"]
+            collections["estatisticas"].delete_many({"jogo_id": jogo_id})
+            collections["jogos"].delete_one({"_id": jogo_id})
 
 
 def deletar_equipe():
@@ -41,16 +54,16 @@ def deletar_equipe():
         st.info("Nenhuma equipe disponível para deletar.")
         return
 
-    lista_equipes = [f"{equipe['nome']} (ID: {equipe['_id']})" for equipe in equipes]
-    equipe_selecionada = st.selectbox("Escolha uma equipe:", lista_equipes)
+    lista_nomes_equipes = [equipe["nome"] for equipe in equipes]
+    nome_equipe_selecionada = st.selectbox("Escolha uma equipe:", lista_nomes_equipes)
 
-    if st.button("Deletar"):
-        equipe_id = equipe_selecionada.split(" (ID: ")[1].strip(")")
+    if st.button("Deletar Equipe"):
         try:
-            desassociar_jogadores_da_equipe(ObjectId(equipe_id))
+            desassociar_jogadores_da_equipe(nome_equipe_selecionada)
+            deletar_jogos_da_equipe(nome_equipe_selecionada)
             with st.spinner("Deletando equipe..."):
-                collections["equipes"].delete_one({"_id": ObjectId(equipe_id)})
-            st.success("Equipe deletada com sucesso!")
+                collections["equipes"].delete_one({"nome": nome_equipe_selecionada})
+            st.success("Equipe e dados associados deletados com sucesso!")
             st.rerun()
         except Exception as e:
             st.error(f"Erro ao deletar: {e}")
@@ -62,7 +75,9 @@ def visualizar_equipe():
         equipes = list(collections["equipes"].find())
 
     if equipes:
-        dados_tabela = [{"Nome da Equipe": equipe["nome"]} for equipe in equipes]
-        st.dataframe(dados_tabela)
+        dados_tabela = [
+            {"Nome da Equipe": equipe.get("nome", "Desconhecida")} for equipe in equipes
+        ]
+        st.table(dados_tabela)
     else:
         st.info("Nenhuma equipe cadastrada ainda.")

@@ -133,6 +133,6 @@ def visualizar_estatisticas():
                 }
             )
 
-        st.dataframe(dados_tabela)
+        st.table(dados_tabela)
     else:
         st.info("Nenhuma estatística registrada ainda.")

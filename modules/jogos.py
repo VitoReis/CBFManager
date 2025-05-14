@@ -23,49 +23,44 @@ def cadastrar_jogo():
         st.error("Não há equipes cadastradas. Cadastre equipes primeiro.")
         return
 
-    lista_equipes = [f"{equipe['nome']} (ID: {equipe['_id']})" for equipe in equipes]
+    lista_equipes = [equipe["nome"] for equipe in equipes]
 
-    equipe1_selecionada = st.selectbox("Escolha a Equipe 1:", lista_equipes)
-    equipe2_selecionada = st.selectbox("Escolha a Equipe 2:", lista_equipes)
+    nome_equipe1 = st.selectbox("Escolha a Equipe 1:", lista_equipes)
+    nome_equipe2 = st.selectbox("Escolha a Equipe 2:", lista_equipes)
 
-    if equipe1_selecionada == equipe2_selecionada:
+    if nome_equipe1 == nome_equipe2:
         st.error("A Equipe 1 e a Equipe 2 não podem ser a mesma.")
         return
 
-    equipe1_id = equipe1_selecionada.split(" (ID: ")[1].strip(")")
-    equipe2_id = equipe2_selecionada.split(" (ID: ")[1].strip(")")
-
-    if st.button("Cadastrar"):
-        if equipe1_id != equipe2_id:
-            equipe1_id = ObjectId(equipe1_id)
-            equipe2_id = ObjectId(equipe2_id)
-
-            with st.spinner("Verificando se o jogo já existe..."):
-                jogo_existente = collections["jogos"].find_one(
-                    {
-                        "$or": [
-                            {"equipe1_id": equipe1_id, "equipe2_id": equipe2_id},
-                            {"equipe1_id": equipe2_id, "equipe2_id": equipe1_id},
-                        ]
-                    }
-                )
-            if jogo_existente:
-                st.error("Já existe um jogo registrado entre essas equipes.")
-            else:
-                jogo = {
+    if st.button("Cadastrar Jogo"):
+        with st.spinner("Verificando se o jogo já existe..."):
+            jogo_existente = collections["jogos"].find_one(
+                {
+                    "$or": [
+                        {"nome_equipe1": nome_equipe1, "nome_equipe2": nome_equipe2},
+                        {"nome_equipe1": nome_equipe2, "nome_equipe2": nome_equipe1},
+                    ],
                     "data": str(data_jogo),
                     "hora": str(hora_jogo),
-                    "local": local_jogo,
-                    "equipe1_id": equipe1_id,
-                    "equipe2_id": equipe2_id,
                 }
-                with st.spinner("Cadastrando jogo..."):
-                    collections["jogos"].insert_one(jogo)
-                st.success(
-                    f"Jogo entre as equipes {equipe1_selecionada} e {equipe2_selecionada} cadastrado com sucesso!"
-                )
+            )
+        if jogo_existente:
+            st.error(
+                "Já existe um jogo registrado entre essas equipes nessa data e hora."
+            )
         else:
-            st.error("As equipes não podem ser a mesma para o jogo.")
+            jogo = {
+                "data": str(data_jogo),
+                "hora": str(hora_jogo),
+                "local": local_jogo,
+                "nome_equipe1": nome_equipe1,
+                "nome_equipe2": nome_equipe2,
+            }
+            with st.spinner("Cadastrando jogo..."):
+                collections["jogos"].insert_one(jogo)
+            st.success(
+                f"Jogo entre {nome_equipe1} e {nome_equipe2} cadastrado com sucesso!"
+            )
 
 
 def deletar_jogo():
@@ -78,28 +73,27 @@ def deletar_jogo():
         st.info("Nenhum jogo cadastrado ainda.")
         return
 
-    opcoes_jogos = []
-    for jogo in jogos:
-        with st.spinner("Buscando informações das equipes..."):
-            equipe1 = collections["equipes"].find_one({"_id": jogo["equipe1_id"]})
-            equipe2 = collections["equipes"].find_one({"_id": jogo["equipe2_id"]})
-
-        equipe1_nome = equipe1["nome"] if equipe1 else "Equipe não encontrada"
-        equipe2_nome = equipe2["nome"] if equipe2 else "Equipe não encontrada"
-
-        descricao = f"{jogo['data']} {jogo['hora']} - {jogo['local']} | {equipe1_nome} vs {equipe2_nome} (ID: {jogo['_id']})"
-        opcoes_jogos.append(descricao)
+    opcoes_jogos = [
+        f"{j['data']} {j['hora']} - {j['local']} | {j.get('nome_equipe1', 'Desconhecida')} vs {j.get('nome_equipe2', 'Desconhecida')} (ID: {j['_id']})"
+        for j in jogos
+    ]
 
     jogo_selecionado = st.selectbox("Escolha o jogo para deletar:", opcoes_jogos)
 
     if st.button("Deletar"):
-        jogo_id = jogo_selecionado.split("(ID: ")[1].strip(")")
+        jogo_id_str = jogo_selecionado.split("(ID: ")[1].strip(")")
+        jogo_id = ObjectId(jogo_id_str)
+
         try:
             with st.spinner("Deletando jogo e estatísticas associadas..."):
-                collections["estatisticas"].delete_many({"jogo_id": ObjectId(jogo_id)})
-                collections["jogos"].delete_one({"_id": ObjectId(jogo_id)})
-            st.success("Jogo deletado com sucesso!")
+                # CASCADE ESTATISTICA
+                collections["estatisticas"].delete_many({"jogo_id": jogo_id})
+
+                collections["jogos"].delete_one({"_id": jogo_id})
+
+            st.success("Jogo e suas estatísticas associadas deletados com sucesso!")
             st.rerun()
+
         except Exception as e:
             st.error(f"Erro ao deletar o jogo: {e}")
 
@@ -111,26 +105,17 @@ def visualizar_jogo():
         jogos = list(collections["jogos"].find())
 
     if jogos:
-        dados_tabela = []
+        dados_tabela = [
+            {
+                "Data": jogo["data"],
+                "Hora": jogo["hora"],
+                "Local": jogo["local"],
+                "Equipe 1": jogo.get("nome_equipe1", "Desconhecida"),
+                "Equipe 2": jogo.get("nome_equipe2", "Desconhecida"),
+            }
+            for jogo in jogos
+        ]
 
-        for jogo in jogos:
-            with st.spinner("Buscando equipes..."):
-                equipe1 = collections["equipes"].find_one({"_id": jogo["equipe1_id"]})
-                equipe2 = collections["equipes"].find_one({"_id": jogo["equipe2_id"]})
-
-            equipe1_nome = equipe1["nome"] if equipe1 else "Equipe não encontrada"
-            equipe2_nome = equipe2["nome"] if equipe2 else "Equipe não encontrada"
-
-            dados_tabela.append(
-                {
-                    "Data": jogo["data"],
-                    "Hora": jogo["hora"],
-                    "Local": jogo["local"],
-                    "Equipe 1": equipe1_nome,
-                    "Equipe 2": equipe2_nome,
-                }
-            )
-
-        st.dataframe(dados_tabela)
+        st.table(dados_tabela)
     else:
         st.info("Nenhum jogo cadastrado ainda.")

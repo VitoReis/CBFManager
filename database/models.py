@@ -4,5 +4,5 @@ def get_collections(db):
         "equipes": db["equipes"],
         "jogos": db["jogos"],
         "estatisticas": db["estatisticas"],
-        "usuarios": db["usuarios"]
+        "pessoas": db["pessoas"],
     }

@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="CBF Manager", page_icon="./assets/CBF.png")
 
-from modules import usuarios, jogadores, equipes, jogos, estatisticas
+from modules import pessoas, jogadores, equipes, jogos, estatisticas
 from database.connection import get_db
 from database.models import get_collections
 
@@ -10,12 +10,12 @@ from database.models import get_collections
 with st.spinner("Conectando ao banco de dados..."):
     db = get_db()
     collections = get_collections(db)
-    usuarios_collection = db["usuarios"]
+    pessoas_collection = db["pessoas"]
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
-if "usuario" not in st.session_state:
-    st.session_state.usuario = None
+if "pessoa" not in st.session_state:
+    st.session_state.pessoa = None
 
 if not st.session_state.logado:
     st.title("🔐 Login - CBF Manager")
@@ -25,33 +25,33 @@ if not st.session_state.logado:
 
     if st.button("Entrar"):
         with st.spinner("Verificando credenciais..."):
-            usuario = usuarios_collection.find_one({"login": login, "senha": senha})
-        if usuario:
-            st.success(f"✅ Bem-vindo, {usuario['login']}!")
+            pessoa = pessoas_collection.find_one({"login": login, "senha": senha})
+        if pessoa:
+            st.success(f"✅ Bem-vindo, {pessoa['login']}!")
             st.session_state.logado = True
-            st.session_state.usuario = usuario
+            st.session_state.pessoa = pessoa
             st.rerun()
         else:
-            st.error("🚫 Usuário ou senha inválidos")
+            st.error("🚫 Login ou senha inválidos")
 
 else:
     st.sidebar.success(
-        f"👤 Logado como: {st.session_state.usuario['login']} ({st.session_state.usuario['tipo']})"
+        f"👤 Logado como: {st.session_state.pessoa['login']} ({st.session_state.pessoa['tipo']})"
     )
 
     if st.sidebar.button("Sair"):
         st.session_state.logado = False
-        st.session_state.usuario = None
+        st.session_state.pessoa = None
         st.rerun()
 
     st.title("⚽ CBF Manager")
 
-    if st.session_state.usuario["tipo"] == "admin":
+    if st.session_state.pessoa["tipo"] == "administrador":
         page = st.sidebar.selectbox(
             "📋 Menu do Administrador",
             [
-                "Cadastrar Usuario",
-                "Deletar Usuario",
+                "Cadastrar Pessoa",
+                "Deletar Pessoa",
                 "Cadastrar Jogador",
                 "Deletar Jogador",
                 "Cadastrar Equipe",
@@ -63,10 +63,10 @@ else:
             ],
         )
 
-        if page == "Cadastrar Usuario":
-            usuarios.cadastrar_usuario()
-        elif page == "Deletar Usuario":
-            usuarios.deletar_usuario()
+        if page == "Cadastrar Pessoa":
+            pessoas.cadastrar_pessoa()
+        elif page == "Deletar Pessoa":
+            pessoas.deletar_pessoa()
         elif page == "Cadastrar Jogador":
             jogadores.cadastrar_jogador()
         elif page == "Deletar Jogador":
@@ -84,7 +84,7 @@ else:
         elif page == "Deletar Estatísticas":
             estatisticas.deletar_estatisticas()
 
-    elif st.session_state.usuario["tipo"] == "usuario":
+    elif st.session_state.pessoa["tipo"] == "usuario":
         page = st.sidebar.selectbox(
             "📋 Menu do Usuário",
             [
