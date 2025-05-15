@@ -4,14 +4,14 @@ Este projeto faz parte do trabalho prático da disciplina de **Banco de Dados** 
 ## 🎯 Funcionalidades  
 O sistema possui dois tipos de usuários com diferentes níveis de acesso:
 -	Administrador: tem permissão para realizar operações de criação (Create), edição (Update) e remoção (Delete) de dados.
--	Usuário comum: possui acesso somente para visualização (Read) dos dados.
+-	Usuário: possui acesso somente para visualização (Read) dos dados.
 
 As principais entidades gerenciadas no sistema são:
 -	Jogadores
 -	Equipes
 -	Jogos
 -	Estatísticas
-- Usuários
+- Pessoas
 
 ## 🏗️ Tecnologias Utilizadas  
 - **Python** 🐍  
@@ -33,7 +33,7 @@ CBFManager/
 │   │── equipes.py          # Gerenciamento de equipes
 │   │── jogos.py            # Gerenciamento de jogos
 │   │── estatisticas.py     # Gerenciamento de estatísticas
-│   │── usuarios.py         # Gerenciamento de usuários
+│   │── pessoas.py         # Gerenciamento de usuários
 ```
 
 ## 🚀 Como Executar  
