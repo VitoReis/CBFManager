@@ -21,7 +21,9 @@ def cadastrar_pessoa():
                 {
                     "login": login_pessoa,
                     "senha": senha_pessoa,
-                    "tipo": "admin" if tipo_pessoa == "Administrador" else "Usuario",
+                    "tipo": (
+                        "administrador" if tipo_pessoa == "Administrador" else "usuario"
+                    ),
                 }
             )
             st.success(f"'{login_pessoa}' foi cadastrado!")
