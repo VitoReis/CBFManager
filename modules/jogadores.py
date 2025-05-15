@@ -21,26 +21,26 @@ def cadastrar_jogador():
     numero_jogador = st.number_input("Número do Jogador:", min_value=1, step=1)
 
     if st.button("Cadastrar Jogador"):
-        equipe_nome = None if equipe_selecionada == "Nenhuma" else equipe_selecionada
+        nome_equipe = None if equipe_selecionada == "Nenhuma" else equipe_selecionada
 
         with st.spinner("Verificando jogador existente..."):
             filtro = {
                 "nome": nome_jogador,
                 "numero": numero_jogador,
-                "equipe_nome": equipe_nome,
+                "nome_equipe": nome_equipe,
             }
             jogador_existente = collections["jogadores"].find_one(filtro)
 
         if jogador_existente:
             msg = f"Já existe um jogador com o número {numero_jogador}"
-            msg += f" na equipe '{equipe_nome}'." if equipe_nome else " sem equipe."
+            msg += f" na equipe '{nome_equipe}'." if nome_equipe else " sem equipe."
             st.error(msg)
         else:
             with st.spinner("Cadastrando jogador..."):
                 doc = {
                     "nome": nome_jogador,
                     "numero": numero_jogador,
-                    "equipe_nome": equipe_nome,
+                    "nome_equipe": nome_equipe,
                 }
                 collections["jogadores"].insert_one(doc)
 
@@ -58,7 +58,7 @@ def deletar_jogador():
         return
 
     lista_jogadores = [
-        f"{j['nome']} | Nº {j['numero']} | {j.get('equipe_nome', 'Nenhuma')} (ID: {j['_id']})"
+        f"{j['nome']} | Nº {j['numero']} | {j.get('nome_equipe', 'Nenhuma')} (ID: {j['_id']})"
         for j in jogadores
     ]
 
