@@ -119,3 +119,82 @@ def visualizar_jogo():
         st.table(dados_tabela)
     else:
         st.info("Nenhum jogo cadastrado ainda.")
+
+
+def editar_jogo():
+    st.header("Editar Jogo")
+    st.subheader(
+        "Editar um jogo irá deletar todas as estatísticas relacionadas ao mesmo"
+    )
+
+    with st.spinner("Carregando jogos..."):
+        jogos = list(collections["jogos"].find())
+
+    if not jogos:
+        st.info("Nenhum jogo cadastrado ainda.")
+        return
+
+    opcoes = [
+        {
+            "label": f"{j['data']} {j['hora']} - {j['local']} | {j['nome_equipe1']} vs {j['nome_equipe2']}",
+            "id": j["_id"],
+            "data": j["data"],
+            "hora": j["hora"],
+            "local": j["local"],
+            "equipe1": j["nome_equipe1"],
+            "equipe2": j["nome_equipe2"],
+        }
+        for j in jogos
+    ]
+
+    labels = [j["label"] for j in opcoes]
+    escolha = st.selectbox("Selecione o jogo para editar:", labels)
+    selecionado = next(j for j in opcoes if j["label"] == escolha)
+
+    try:
+        hora_formatada = datetime.datetime.strptime(
+            selecionado["hora"], "%H:%M:%S"
+        ).time()
+    except ValueError:
+        hora_formatada = datetime.datetime.strptime(selecionado["hora"], "%H:%M").time()
+
+    data_jogo = st.date_input(
+        "Data do Jogo:",
+        datetime.datetime.strptime(selecionado["data"], "%Y-%m-%d").date(),
+    )
+    hora_jogo = st.time_input("Hora do Jogo:", hora_formatada)
+    local_jogo = st.text_input("Local do Jogo:", value=selecionado["local"])
+
+    with st.spinner("Carregando equipes..."):
+        equipes = list(collections["equipes"].find())
+    nomes_equipes = [e["nome"] for e in equipes]
+
+    equipe1 = st.selectbox(
+        "Equipe 1:", nomes_equipes, index=nomes_equipes.index(selecionado["equipe1"])
+    )
+    equipe2 = st.selectbox(
+        "Equipe 2:", nomes_equipes, index=nomes_equipes.index(selecionado["equipe2"])
+    )
+
+    if equipe1 == equipe2:
+        st.error("A Equipe 1 e a Equipe 2 não podem ser a mesma.")
+        return
+
+    if st.button("Salvar Alterações"):
+        with st.spinner("Atualizando jogo..."):
+            # CASCADE
+            collections["estatisticas"].delete_many({"jogo_id": selecionado["id"]})
+
+            collections["jogos"].update_one(
+                {"_id": selecionado["id"]},
+                {
+                    "$set": {
+                        "data": str(data_jogo),
+                        "hora": str(hora_jogo),
+                        "local": local_jogo,
+                        "nome_equipe1": equipe1,
+                        "nome_equipe2": equipe2,
+                    }
+                },
+            )
+        st.success("Jogo atualizado e estatísticas relacionadas deletadas com sucesso!")

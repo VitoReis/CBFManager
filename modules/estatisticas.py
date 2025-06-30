@@ -136,3 +136,50 @@ def visualizar_estatisticas():
         st.table(dados_tabela)
     else:
         st.info("Nenhuma estatística registrada ainda.")
+
+
+def editar_estatisticas():
+    st.header("Editar Estatística de Jogador")
+
+    with st.spinner("Carregando estatísticas..."):
+        estatisticas = list(collections["estatisticas"].find())
+
+    if not estatisticas:
+        st.info("Nenhuma estatística registrada ainda.")
+        return
+
+    opcoes = []
+    for estat in estatisticas:
+        jogador = collections["jogadores"].find_one({"_id": estat["jogador_id"]})
+        jogo = collections["jogos"].find_one({"_id": estat["jogo_id"]})
+
+        jogador_nome = jogador["nome"] if jogador else "Desconhecido"
+        jogo_info = f"{jogo['data']} - {jogo['local']}" if jogo else "Jogo desconhecido"
+
+        opcoes.append(
+            {
+                "label": f"{jogador_nome} - {jogo_info}",
+                "id": estat["_id"],
+                "gols": estat["gols"],
+                "cartoes": estat["cartoes"],
+            }
+        )
+
+    labels = [op["label"] for op in opcoes]
+    escolha = st.selectbox("Escolha a estatística para editar:", labels)
+    selecionado = next(op for op in opcoes if op["label"] == escolha)
+
+    gols = st.number_input(
+        "Gols Marcados:", min_value=0, value=selecionado["gols"], step=1
+    )
+    cartoes = st.number_input(
+        "Cartões Recebidos:", min_value=0, value=selecionado["cartoes"], step=1
+    )
+
+    if st.button("Salvar Alterações"):
+        with st.spinner("Atualizando estatística..."):
+            collections["estatisticas"].update_one(
+                {"_id": selecionado["id"]},
+                {"$set": {"gols": gols, "cartoes": cartoes}},
+            )
+        st.success("Estatística atualizada com sucesso!")

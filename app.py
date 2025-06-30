@@ -53,12 +53,15 @@ else:
                 "Cadastrar Pessoa",
                 "Deletar Pessoa",
                 "Cadastrar Jogador",
+                "Editar Jogador",
                 "Deletar Jogador",
                 "Cadastrar Equipe",
                 "Deletar Equipe",
                 "Cadastrar Jogo",
+                "Editar Jogo",
                 "Deletar Jogo",
                 "Cadastrar Estatísticas",
+                "Editar Estatísticas",
                 "Deletar Estatísticas",
             ],
         )
@@ -69,6 +72,8 @@ else:
             pessoas.deletar_pessoa()
         elif page == "Cadastrar Jogador":
             jogadores.cadastrar_jogador()
+        elif page == "Editar Jogador":
+            jogadores.editar_jogador()
         elif page == "Deletar Jogador":
             jogadores.deletar_jogador()
         elif page == "Cadastrar Equipe":
@@ -77,10 +82,14 @@ else:
             equipes.deletar_equipe()
         elif page == "Cadastrar Jogo":
             jogos.cadastrar_jogo()
+        elif page == "Editar Jogo":
+            jogos.editar_jogo()
         elif page == "Deletar Jogo":
             jogos.deletar_jogo()
         elif page == "Cadastrar Estatísticas":
             estatisticas.cadastrar_estatisticas()
+        elif page == "Editar Estatísticas":
+            estatisticas.editar_estatisticas()
         elif page == "Deletar Estatísticas":
             estatisticas.deletar_estatisticas()
 

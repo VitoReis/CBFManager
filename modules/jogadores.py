@@ -109,3 +109,52 @@ def visualizar_jogador():
         st.table(dados_tabela)
     else:
         st.info("Nenhum jogador cadastrado ainda.")
+
+
+def editar_jogador():
+    st.header("Editar Jogador")
+
+    with st.spinner("Carregando jogadores..."):
+        jogadores = list(collections["jogadores"].find())
+
+    if not jogadores:
+        st.info("Nenhum jogador cadastrado ainda.")
+        return
+
+    opcoes = [
+        {
+            "label": f"{j['nome']} | Nº {j['numero']} | {j.get('nome_equipe', 'Nenhuma')}",
+            "id": j["_id"],
+            "nome": j["nome"],
+            "numero": j["numero"],
+            "nome_equipe": j.get("nome_equipe", "Nenhuma"),
+        }
+        for j in jogadores
+    ]
+
+    labels = [j["label"] for j in opcoes]
+    escolha = st.selectbox("Selecione o jogador para editar:", labels)
+    selecionado = next(j for j in opcoes if j["label"] == escolha)
+
+    nome = st.text_input("Nome do Jogador:", value=selecionado["nome"])
+    numero = st.number_input(
+        "Número do Jogador:", min_value=1, value=selecionado["numero"], step=1
+    )
+
+    with st.spinner("Carregando equipes..."):
+        equipes = list(collections["equipes"].find())
+
+    lista_equipes = ["Nenhuma"] + [e["nome"] for e in equipes]
+    equipe = st.selectbox(
+        "Equipe:", lista_equipes, index=lista_equipes.index(selecionado["nome_equipe"])
+    )
+
+    nome_equipe = None if equipe == "Nenhuma" else equipe
+
+    if st.button("Salvar Alterações"):
+        with st.spinner("Atualizando jogador..."):
+            collections["jogadores"].update_one(
+                {"_id": selecionado["id"]},
+                {"$set": {"nome": nome, "numero": numero, "nome_equipe": nome_equipe}},
+            )
+        st.success("Jogador atualizado com sucesso!")
