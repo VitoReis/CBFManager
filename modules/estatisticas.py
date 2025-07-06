@@ -11,30 +11,56 @@ with st.spinner("Conectando ao banco de dados..."):
 def cadastrar_estatisticas():
     st.header("Cadastrar Estatística de Jogador")
 
-    with st.spinner("Carregando jogadores e jogos..."):
-        jogadores = list(collections["jogadores"].find())
+    with st.spinner("Carregando jogos..."):
         jogos = list(collections["jogos"].find())
-
-    if not jogadores:
-        st.error("Não há jogadores cadastrados. Cadastre jogadores primeiro.")
-        return
 
     if not jogos:
         st.error("Não há jogos cadastrados. Cadastre jogos primeiro.")
         return
 
-    lista_jogadores = [
-        f"{jogador['nome']} (ID: {jogador['_id']})" for jogador in jogadores
-    ]
     lista_jogos = [
         f"{jogo['data']} - {jogo['local']} (ID: {jogo['_id']})" for jogo in jogos
     ]
 
-    jogador_selecionado = st.selectbox("Escolha o Jogador:", lista_jogadores)
-    jogo_selecionado = st.selectbox("Escolha o Jogo:", lista_jogos)
+    jogo_selecionado_str = st.selectbox("Escolha o Jogo:", lista_jogos)
+    jogo_id = ObjectId(jogo_selecionado_str.split(" (ID: ")[1].strip(")"))
 
-    jogador_id = ObjectId(jogador_selecionado.split(" (ID: ")[1].strip(")"))
-    jogo_id = ObjectId(jogo_selecionado.split(" (ID: ")[1].strip(")"))
+    jogo = collections["jogos"].find_one({"_id": jogo_id})
+
+    if not jogo:
+        st.error("Jogo não encontrado.")
+        return
+
+    equipe1 = jogo.get("nome_equipe1")
+    equipe2 = jogo.get("nome_equipe2")
+
+    with st.spinner("Carregando jogadores das equipes..."):
+        jogadores = list(
+            collections["jogadores"].find({"nome_equipe": {"$in": [equipe1, equipe2]}})
+        )
+
+    if not jogadores:
+        st.error("Nenhum jogador encontrado para as equipes deste jogo.")
+        return
+
+    jogadores_por_equipe = {
+        equipe1: [],
+        equipe2: [],
+    }
+
+    for jogador in jogadores:
+        equipe = jogador.get("nome_equipe")
+        if equipe in jogadores_por_equipe:
+            jogadores_por_equipe[equipe].append(jogador)
+
+    lista_jogadores_opcoes = []
+    for equipe, jogadores_equipe in jogadores_por_equipe.items():
+        for jogador in jogadores_equipe:
+            label = f"{equipe} - {jogador['nome']} (Nº {jogador['numero']}) (ID: {jogador['_id']})"
+            lista_jogadores_opcoes.append(label)
+
+    jogador_selecionado_str = st.selectbox("Escolha o Jogador:", lista_jogadores_opcoes)
+    jogador_id = ObjectId(jogador_selecionado_str.split(" (ID: ")[1].strip(")"))
 
     gols = st.number_input("Gols Marcados:", min_value=0, step=1)
     cartoes = st.number_input("Cartões Recebidos:", min_value=0, step=1)
